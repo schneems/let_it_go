@@ -1,9 +1,8 @@
 module LetItGo
   module Middleware
     class Olaf
-      def initialize(app, parse_source: LetItGo::DEFAULT_PARSE_SOURCE)
+      def initialize(app)
         @app          = app
-        @parse_source = parse_source
       end
 
       def asset_request?(path)
@@ -16,9 +15,10 @@ module LetItGo
 
       def call(env)
         result = nil
-        report = LetItGo.record(parse_source: @parse_source) do
+        report = LetItGo.record do
           result = @app.call(env)
         end
+        puts ""
         report.print if not_asset_request?(env["REQUEST_PATH".freeze])
         result
       end

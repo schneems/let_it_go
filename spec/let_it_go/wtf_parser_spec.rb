@@ -134,7 +134,7 @@ describe LetItGo::WTFParser do
   end
 
   it "implicit methods" do
-    pending("Parsing a parsed output is hard")
+    # pending("Parsing a parsed output is hard")
 
     code = <<-CODE
       "hello" + "there"
@@ -145,6 +145,20 @@ describe LetItGo::WTFParser do
     pp ripped_code
     parser      = LetItGo::WTFParser.new(ripped_code)
     arg_types = parser.each_method.select {|x| x.method_name == "+" }.map(&:arg_types)
+
+    expect(arg_types).to eq([[:string_literal]])
+  end
+
+  it "implicit receiver" do
+    code = <<-CODE
+      foo("hello")
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+
+    pp ripped_code
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types = parser.each_method.select {|x| x.method_name == "foo" }.map(&:arg_types)
 
     expect(arg_types).to eq([[:string_literal]])
   end

@@ -1,56 +1,40 @@
 require 'ripper'
 require 'pp'
 
+# code = <<-CODE
+#   "foo".gsub(//, "blerg".downcase)
+# CODE
 
-[:program,
- [[:command_call,
-   [:string_literal, [:string_content, [:@tstring_content, "foo", [1, 3]]]],
-   :".",
-   [:@ident, "gsub", [1, 8]],
-   [:args_add_block,
-    [[:regexp_literal, [], [:@regexp_end, "/", [1, 14]]],
-     [:call,
-      [:string_literal,
-       [:string_content, [:@tstring_content, "blerg", [1, 18]]]],
-      :".",
-      [:@ident, "downcase", [1, 25]]]],
-    false]]]]
-
-
-[:program,
- [[:method_add_arg,
-   [:call,
-    [:string_literal, [:string_content, [:@tstring_content, "foo", [1, 3]]]],
-    :".",
-    [:@ident, "gsub", [1, 8]]],
-   [:arg_paren,
-    [:args_add_block,
-     [[:regexp_literal, [], [:@regexp_end, "/", [1, 14]]],
-      [:call,
-       [:string_literal,
-        [:string_content, [:@tstring_content, "blerg", [1, 18]]]],
-       :".",
-       [:@ident, "downcase", [1, 25]]]],
-     false]]]]]
-
-
-code = <<-CODE
-  "foo".gsub(//, "blerg".downcase)
-CODE
-
-ripped_code = Ripper.sexp(code)
+# ripped_code = Ripper.sexp(code)
 
 code = <<-CODE
   "foo".gsub //, "blerg".downcase
 CODE
 
 ripped_code = Ripper.sexp(code)
+# pp ripped_code
 
+puts "============="
+
+
+# code = <<-CODE
+#   ["hello"] << "there"
+# CODE
+
+# ripped_code = Ripper.sexp(code)
+# pp ripped_code
+
+
+code = <<-CODE
+  ps.find_all { |l| followpos(l).include?(DUMMY) }
+CODE
+ripped_code = Ripper.sexp(code)
 pp ripped_code
 
 def find_method_adds(ripped_code, array = [])
   return false unless ripped_code.is_a?(Array)
-  if ripped_code.first == :method_add_arg || ripped_code.first == :command_call
+  case ripped_code.first
+  when :method_add_arg, :command_call, :binary
     array << ripped_code
     ripped_code.shift
     ripped_code.each do |code|
@@ -72,6 +56,23 @@ puts array.count
 pp array
 
 
-def call(array)
-  array.map {|x| }
+
+def foo
 end
+
+# trace = TracePoint.trace(:call, :c_call) do |tp|
+#   tp.disable
+#   puts "=="
+#   puts tp.defined_class
+#   puts tp.method_id.inspect
+#   tp.enable
+# end
+
+# trace.enable
+
+# a = rand
+# "blahblah" << "blah #{a}"
+
+foo()
+
+

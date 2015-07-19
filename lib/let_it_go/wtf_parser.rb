@@ -11,7 +11,7 @@ module LetItGo
     # :string_literal
     class MethodAdd
       # @raw =
-      #   [:call,
+      #   [
       #    [:string_literal, [:string_content, [:@tstring_content, "foo", [1, 7]]]],
       #    :".",
       #    [:@ident, "gsub", [1, 12]]],
@@ -34,7 +34,7 @@ module LetItGo
       #  [:@ident, "gsub", [1, 12]]
       # ]
       def call
-        @raw.find {|x| x.first == :call}
+        @raw.find {|x| x.first == :call || x.first == :fcall}
       end
 
       # For gsub we want to pull from [:@ident, "gsub", [1, 12]] from `call`
@@ -91,7 +91,7 @@ module LetItGo
     # is different than regular method calls?
     class CommandCall < MethodAdd
       # @raw =
-      # [:command_call,
+      # [
       #  [:string_literal, [:string_content, [:@tstring_content, "foo", [1, 7]]]],
       #  :".",
       #  [:@ident, "gsub", [1, 12]],
@@ -125,7 +125,34 @@ module LetItGo
       def arg_types
         args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }
       end
+    end
 
+    # These are calls to operators that take 1 argument such as `1 + 1` or `[] << 1`
+    class BinaryCall
+      # @raw =
+      # [
+      #   [:string_literal, [:string_content, [:@tstring_content, "hello", [1, 7]]]],
+      #   :+,
+      #   [:string_literal,
+      #    [:string_content, [:@tstring_content, "there", [1, 17]]]]]
+      def initialize(ripped_code)
+        ripped_code = ripped_code.dup
+        raise "Wrong node" unless ripped_code.shift == :binary
+        @raw = ripped_code
+      end
+
+      # For `1 + 1` we want to pull "+"
+      def method_name
+        @raw[1].to_s
+      end
+
+      def args
+        [@raw.last]
+      end
+
+      def arg_types
+        args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }
+      end
     end
 
     def initialize(ripped_code)
@@ -135,17 +162,20 @@ module LetItGo
     # Parses raw input recursively looking for :method_add_arg blocks
     def find_method_add_from_raw(ripped_code, array = [])
       return false unless ripped_code.is_a?(Array)
-       if ripped_code.first == :method_add_arg || ripped_code.first == :command_call
-        array << MethodAdd.new(ripped_code)   if ripped_code.first  == :method_add_arg
-        array << CommandCall.new(ripped_code) if ripped_code.first  == :command_call
+
+      case ripped_code.first
+      when :method_add_arg
+        array << MethodAdd.new(ripped_code)
         ripped_code.shift
-        ripped_code.each do |code|
-          find_method_add_from_raw(code, array)
-        end
-      else
-        ripped_code.each do |code|
-          find_method_add_from_raw(code, array) unless ripped_code.empty?
-        end
+      when :command_call
+        array << CommandCall.new(ripped_code)
+        ripped_code.shift
+      when :binary
+        array << BinaryCall.new(ripped_code)
+        ripped_code.shift
+      end
+      ripped_code.each do |code|
+        find_method_add_from_raw(code, array) unless ripped_code.empty?
       end
     end
 

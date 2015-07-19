@@ -28,7 +28,6 @@ describe "String#" do
   end
 
   it "<<" do
-    pending("Parsing imlicit method calls with WTFParser")
     report = LetItGo.record do
       "" << ","
     end
@@ -41,7 +40,6 @@ describe "String#" do
   end
 
   it "+" do
-    pending("Parsing imlicit method calls with WTFParser")
     report = LetItGo.record do
       "" + ","
     end

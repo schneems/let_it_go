@@ -10,19 +10,22 @@ end
 require 'let_it_go/wtf_parser'
 
 module LetItGo
-  DEFAULT_PARSE_SOURCE = true
-  @mutex               = Mutex.new
+  @mutex    = Mutex.new
+  @watching = {}
+
+  def self.watching_positions(klass, method)
+    @watching[klass] && @watching[klass][method]
+  end
 
   # Main method, wrap code you want to check for frozen violations in
   # a `let_it_go` block.
   #
   # By default it will try to parse source of the method call to determine
   # if a string literal or variable was used. We only care about string literals.
-  def self.record(parse_source: DEFAULT_PARSE_SOURCE)
+  def self.record
     @mutex.synchronize do
-      Thread.current[:let_it_go_parse_source] = parse_source
       Thread.current[:let_it_go_recording]    = :on
-      Thread.current[:let_it_go_records]      = {}
+      Thread.current[:let_it_go_records]      = {} # nil => never checked, 0 => checked, no string literals, positive => checked, positive literals detected
     end
     yield
     records = Thread.current[:let_it_go_records]
@@ -30,7 +33,6 @@ module LetItGo
     return report
   ensure
     @mutex.synchronize do
-      Thread.current[:let_it_go_parse_source] = nil
       Thread.current[:let_it_go_recording]    = nil
       Thread.current[:let_it_go_records]      = nil
     end
@@ -44,10 +46,6 @@ module LetItGo
     alias :let_it_go :record
   end
 
-  def self.skip_source_parse?
-    !Thread.current[:let_it_go_parse_source]
-  end
-
   def self.recording?
     Thread.current[:let_it_go_recording] == :on
   end
@@ -56,11 +54,13 @@ module LetItGo
   # can parse original method call's source and determine if a string literal
   # was passed into the method.
   class MethodCall
-    attr_accessor :line_number, :file_name, :klass, :method_name, :kaller
-    def initialize(klass: , method_name: , kaller:)
+    attr_accessor :line_number, :file_name, :klass, :method_name, :kaller, :positions
+
+    def initialize(klass: , method_name: , kaller:, positions: )
       @klass        = klass
       @method_name  = method_name
       @kaller       = kaller
+      @positions    = positions
 
       file_line       = kaller.split(":in `".freeze).first # can't use gsub, because global variables get messed up
       file_line_array = file_line.split(":".freeze)
@@ -85,7 +85,7 @@ module LetItGo
 
     # Parses original method call location
     # Determines if a string literal was used or not
-    def called_with_string_literal?(positions, parser_klass = ::LetItGo::WTFParser)
+    def called_with_string_literal?(parser_klass = ::LetItGo::WTFParser)
       return true if line_to_s.nil?
 
       if parsed_code = Ripper.sexp(line_to_s)
@@ -100,21 +100,53 @@ module LetItGo
     end
   end
 
+
+
   # Call to begin watching method for frozen violations
   def self.watch_frozen(klass, method_name, positions:)
-    original = klass.instance_method(method_name)
-    klass.send(:define_method, method_name) do |*args, &block|
-      if LetItGo.recording?
-        if positions.any? {|position| args[position].is_a?(String) && !args[position].frozen? }
-          meth = MethodCall.new(klass: klass, method_name: method_name, kaller: caller.first )
-          if LetItGo.record_exists?(meth.key) || LetItGo.skip_source_parse? || meth.called_with_string_literal?(positions)
-            LetItGo.store(meth.key)
-          end
-        end
+    @watching[klass] ||= {}
+    @watching[klass][method_name] = positions
+  end
+
+
+  # If we are tracking it
+  #   If it has positive counter
+  #     Increment Counter
+  #   If not
+  #     do nothing
+  # else we are not tracking it
+  #   If it has a frozen string literal
+  #     Set counter to 1
+  #   If it does not
+  #     Set counter to
+  def self.watched_method_was_called(meth)
+    if LetItGo.record_exists?(meth.key)
+      if Thread.current[:let_it_go_records][meth.key] > 0
+        LetItGo.increment(meth.key)
       end
-      original.bind(self).call(*args, &block)
+    else
+      if meth.called_with_string_literal?
+        LetItGo.store(meth.key, 1)
+      else
+        LetItGo.store(meth.key, 0)
+      end
     end
   end
+
+
+  trace = TracePoint.trace(:call, :c_call) do |tp|
+    tp.disable
+    if LetItGo.recording?
+      if positions = watching_positions(tp.defined_class, tp.method_id)
+        meth = MethodCall.new(klass: tp.defined_class, method_name: tp.method_id, kaller: caller.first, positions: positions)
+        LetItGo.watched_method_was_called(meth)
+      end
+    end
+    tp.enable
+  end
+
+  trace.enable
+
 
   # Prevent looking
   def self.record_exists?(key)
@@ -122,17 +154,21 @@ module LetItGo
   end
 
   # Records when a method has been called without passing in a frozen object
-  def self.store(key)
+  def self.store(key, increment = 0)
     @mutex.synchronize do
       Thread.current[:let_it_go_records][key] ||= 0
-      Thread.current[:let_it_go_records][key] += 1
+      Thread.current[:let_it_go_records][key] += increment
     end
+  end
+
+  def self.increment(key)
+    store(key, 1)
   end
 
   # Turns hash of keys into a semi-inteligable sorted result
   class Report
     def initialize(hash_of_reports)
-      @hash = hash_of_reports.sort {|(k1, v1), (k2, v2)| v1 <=> v2 }.reverse
+      @hash = hash_of_reports.reject {|k, v| v.zero? }.sort {|(k1, v1), (k2, v2)| v1 <=> v2 }.reverse
     end
 
     def count
@@ -140,7 +176,7 @@ module LetItGo
     end
 
     def report
-      @report = "## Un-Fozen Hotspots\n"
+      @report = "## Un-Fozen Hotspots (#{count} total)\n"
       @hash.each do |name_location, count|
         @report << "  #{count}: #{name_location}\n"
       end
