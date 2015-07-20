@@ -156,7 +156,7 @@ module LetItGo
     end
 
     def initialize(ripped_code)
-      @raw = ripped_code
+      @raw = ripped_code || []
     end
 
     # Parses raw input recursively looking for :method_add_arg blocks
@@ -179,22 +179,26 @@ module LetItGo
       end
     end
 
-    def method_add
+    def all_methods
       @method_add_array ||= begin
         method_add_array = []
         find_method_add_from_raw(@raw.dup, method_add_array)
         method_add_array
       end
     end
+    alias :method_add :all_methods
 
-    def each_method
+    def each
       if block_given?
-        method_add.each do |obj|
+        all_methods.each do |obj|
           yield obj
         end
       else
-        enum_for(:each_method)
+        enum_for(:each)
       end
     end
+    alias :each_method :each
+
+    include Enumerable
   end
 end

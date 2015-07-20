@@ -145,4 +145,3 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 - Display counts grouped by file then by line/method
 - Implicit methods i.e. 1 + 1 and [1] << 2
 - Global operators != && ==
-- Subclass support. Hook into a class created TracePoint to see if a class is a subclass and add it to the list

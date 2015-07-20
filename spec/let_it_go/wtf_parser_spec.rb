@@ -156,14 +156,27 @@ describe LetItGo::WTFParser do
 
     ripped_code = Ripper.sexp(code)
 
-    pp ripped_code
     parser      = LetItGo::WTFParser.new(ripped_code)
     arg_types = parser.each_method.select {|x| x.method_name == "foo" }.map(&:arg_types)
 
     expect(arg_types).to eq([[:string_literal]])
   end
 
+  it "doesn't return a method on the defining line" do
+    code = <<-CODE
+      def foo(string)
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    expect(parser.all_methods).to eq([])
+
+    code = <<-CODE
+      def foo(string); end
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    expect(parser.all_methods).to eq([])
+  end
 end
-
-
-
