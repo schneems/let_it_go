@@ -142,7 +142,6 @@ describe LetItGo::WTFParser do
 
     ripped_code = Ripper.sexp(code)
 
-    pp ripped_code
     parser      = LetItGo::WTFParser.new(ripped_code)
     arg_types = parser.each_method.select {|x| x.method_name == "+" }.map(&:arg_types)
 
@@ -179,4 +178,99 @@ describe LetItGo::WTFParser do
     parser      = LetItGo::WTFParser.new(ripped_code)
     expect(parser.all_methods).to eq([])
   end
+
+  it "handles star args" do
+    code = <<-CODE
+      foo('', *[])
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types   = parser.each_method.select {|x| x.method_name == "foo" }.map(&:arg_types)
+    expect(arg_types).to eq([[:string_literal, :array]])
+
+    code = <<-CODE
+      foo(*[])
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types   = parser.each_method.select {|x| x.method_name == "foo" }.map(&:arg_types)
+    expect(arg_types).to eq([[:array]])
+  end
+
+  it "handles double star args, bare_assoc_hash" do
+
+    code = <<-CODE
+      foo("", **{})
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types = parser.each_method.select {|x| x.method_name == "foo" }.map(&:arg_types)
+    expect(arg_types).to eq([[:string_literal, :bare_assoc_hash]])
+
+    code = <<-CODE
+      foo(**{})
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types = parser.each_method.select {|x| x.method_name == "foo" }.map(&:arg_types)
+    expect(arg_types).to eq([[:bare_assoc_hash]])
+  end
+
+  it "handles unless_mod" do
+    code = <<-CODE
+        @controller_path ||= name.sub(/Controller$/, '').underscore unless anonymous?
+    CODE
+
+    ripped_code = Ripper.sexp(code)
+
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types = parser.each_method.map(&:arg_types)
+    expect(arg_types).to eq([[], [:regexp_literal, :string_literal]])
+  end
+
+  it "string interpolation" do
+    pending("deal with this, maybe we can freeze in Ruby")
+    code = 'a.unpack "C#{a.bytesize}"'
+
+    ripped_code = Ripper.sexp(code)
+    pp ripped_code
+
+    # [:program,
+    #  [[:command_call,
+    #    [:vcall, [:@ident, "a", [1, 0]]],
+    #    :".",
+    #    [:@ident, "unpack", [1, 2]],
+    #    [:args_add_block,
+    #     [[:string_literal,
+    #       [:string_content,
+    #        [:@tstring_content, "C", [1, 10]],
+    #        [:string_embexpr,
+    #         [[:call,
+    #           [:vcall, [:@ident, "a", [1, 13]]],
+    #           :".",
+    #           [:@ident, "bytesize", [1, 15]]]]]]]],
+    #     false]]]]
+
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types = parser.each_method.map(&:arg_types)
+    expect(arg_types).to eq([[], [:regexp_literal, :string_literal]])
+  end
+
+  it "foo" do
+    code = %Q{code << "else\n  " << (call_method || 'exp') << "\nend".freeze}
+
+    ripped_code = Ripper.sexp(code)
+    pp ripped_code
+
+    parser      = LetItGo::WTFParser.new(ripped_code)
+    arg_types = parser.each_method.select {|x| x.method_name == "<<" }.map(&:arg_types)
+    expect(arg_types).to eq([[:call], [:paren], [:string_literal]])
+  end
+
+
 end
+

@@ -2,6 +2,7 @@
 LetItGo.watch_frozen(String, :+,       positions: [0])
 LetItGo.watch_frozen(String, :<<,      positions: [0])
 LetItGo.watch_frozen(String, :'<=>',     positions: [0])
+LetItGo.watch_frozen(String, :'==',     positions: [0])
 
 # Positions: 0
 

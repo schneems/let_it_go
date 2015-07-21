@@ -124,6 +124,23 @@ This extremely convoluted library works by watching all method calls using [Trac
 
 If you can think of a better way, please open up an issue and send me a proof of concept. I know what you're thinking and no, [programatically aliasing methods won't work for 100% of the time](http://stackoverflow.com/questions/30512945/programmatically-alias-method-that-uses-global-variable).
 
+Note: This method fails for any Ruby code that can't be parsed in 1 line. For example:
+
+```
+query = <<-SQL % known_coder_types.join(", ")
+```
+
+and
+
+```
+(attr[0] == :html && attr[1] == :attr && options[:hyphen_attrs].include?(attr[2]) &&
+```
+
+Are not valid, complete Ruby instructions. That being said this lib is still relevant. To see what you're not able to parse, run with `ENV['LET_IT_GO_RECORD_FAILED_CODE']`
+
+
+
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `bin/console` for an interactive prompt that will allow you to experiment.
@@ -141,7 +158,5 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## TODO
 
-- Count number of string literals * method calls instead of just method calls for methods that can take multiple string literals.
-- Display counts grouped by file then by line/method
-- Implicit methods i.e. 1 + 1 and [1] << 2
-- Global operators != && ==
+- Global operators != && == (maybe it's good enough to only track calls to string)
+- Watch receivers such as "foo".eq(variable)

@@ -77,8 +77,9 @@ describe "Array#" do
   it 'include?' do
     report = LetItGo.record do
       [].include?("")
+      [].include? '..'
     end
-    expect(report.count).to eq(1)
+    expect(report.count).to eq(2)
 
     report = LetItGo.record do
       [].include?("".freeze)

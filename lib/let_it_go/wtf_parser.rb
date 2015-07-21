@@ -73,16 +73,29 @@ module LetItGo
        #        false]]]],
        #    false]]]
       def args_add_block
-        args_paren.last || @raw.find {|x| x.first == :args_add_block }
+        args_paren.last || @raw.find {|x| x.first == :args_add_block } || []
       end
 
       def args
-        args_add_block.first(2).last || []
+        args = (args_add_block.first(2).last || [])
+        case args.first
+        when :args_add_star
+          args.shift
+          args
+        else
+          args
+        end
       end
+
+    # [:fcall, [:@ident, "foo", [1, 6]]],
+    #    [:arg_paren,
+    #     [:args_add_block, [:args_add_star, [], [:array, nil]], false]]
+
+    # [:args_add_star, [], [:array, nil]], false]
 
       # Returns argument types as an array of symbols [:regexp_literal, :string_literal]
       def arg_types
-        args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }
+        args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }.compact
       end
     end
 
@@ -114,7 +127,7 @@ module LetItGo
       end
 
       def args_add_block
-        @raw.find {|x| x.is_a?(Array) ? x.first == :args_add_block : false }
+        @raw.find {|x| x.is_a?(Array) ? x.first == :args_add_block : false } || []
       end
 
       def args
@@ -123,7 +136,7 @@ module LetItGo
 
       # Returns argument types as an array of symbols [:regexp_literal, :string_literal]
       def arg_types
-        args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }
+        args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }.compact
       end
     end
 
@@ -151,11 +164,14 @@ module LetItGo
       end
 
       def arg_types
-        args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }
+        args.map(&:first).map {|x| x.is_a?(Array) ? x.first : x }.compact
       end
     end
 
-    def initialize(ripped_code)
+    attr_accessor :contents
+
+    def initialize(ripped_code, contents: "")
+      @contents   = contents
       @raw = ripped_code || []
     end
 
@@ -189,12 +205,22 @@ module LetItGo
     alias :method_add :all_methods
 
     def each
-      if block_given?
-        all_methods.each do |obj|
-          yield obj
+      begin
+        if block_given?
+          all_methods.each do |obj|
+            begin
+              yield obj
+            rescue => e
+            end
+          end
+        else
+          enum_for(:each)
         end
-      else
-        enum_for(:each)
+      rescue => e
+        msg = "Could not parse seemingly valid Ruby code:\n\n"
+        msg << "    #{ parser.contents.inspect }\n\n"
+        msg << e.message
+        raise e, msg
       end
     end
     alias :each_method :each

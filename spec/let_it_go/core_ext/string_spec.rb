@@ -85,4 +85,16 @@ describe "String#" do
     end
     expect(report.count).to eq(0)
   end
+
+  it '==' do
+    report = LetItGo.record do
+      "" == ""
+    end
+    expect(report.count).to eq(1)
+
+    report = LetItGo.record do
+      "" == "".freeze
+    end
+    expect(report.count).to eq(0)
+  end
 end
