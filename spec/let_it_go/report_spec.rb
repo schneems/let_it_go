@@ -8,7 +8,7 @@ describe LetItGo::Report do
     end
 
     expected = <<-REPORT
-## Un-Fozen Hotspots (5 total)
+## Un-Frozen Hotspots (5 total)
 
   3) #{ fixture("array.rb") }
     - 1) Array#join on line 3

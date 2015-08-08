@@ -11,7 +11,7 @@ module LetItGo
     end
 
     def report
-      @report = "## Un-Fozen Hotspots (#{count} total)\n\n"
+      @report = "## Un-Frozen Hotspots (#{count} total)\n\n"
 
       file_names = @hash.values.map(&:file_name).uniq
       file_name_hash = Hash.new { [] }
