@@ -7,7 +7,7 @@ module LetItGo
     end
 
     def count
-      @hash.inject(0) {|count, (k, obj)| count + obj.count; }
+      @hash.inject(0) {|count, (_k, obj)| count + obj.count; }
     end
 
     def report
@@ -26,7 +26,7 @@ module LetItGo
         }.reverse
 
       file_name_hash.each do |file_name, objects|
-        count = objects.inject(0) {|count, obj| count + obj.count }
+        count = objects.inject(0) {|sum, obj| sum + obj.count }
         @report << "  #{count}) #{file_name}\n"
         objects.each do |obj|
           @report << "    - #{obj.count}) #{obj.klass}##{obj.method_name} on line #{ obj.line_number }\n"
