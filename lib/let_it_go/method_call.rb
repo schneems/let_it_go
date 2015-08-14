@@ -73,6 +73,7 @@ module LetItGo
       @string_allocation_count = 0
       method_array.each do |m|
         positions.each {|position| @string_allocation_count += 1 if m.arg_types[position] == :string_literal }
+        @string_allocation_count += 1 if m.receiver == :string_literal
       end
       !@string_allocation_count.zero?
     end

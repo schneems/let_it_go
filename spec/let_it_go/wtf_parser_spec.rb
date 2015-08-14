@@ -14,6 +14,9 @@ describe LetItGo::WTFParser do
 
     names     = parser.each_method.map {|x| x.method_name }
     expect(names).to eq(["gsub"])
+
+    receivers = parser.each_method.map(&:receiver)
+    expect(receivers).to eq([:string_literal])
   end
 
 
@@ -39,6 +42,9 @@ describe LetItGo::WTFParser do
 
     arg_types = parser.each_method.map {|x| x.arg_types }
     expect(arg_types).to eq([[:regexp_literal, :call], [:regexp_literal, :string_literal]])
+
+    receivers = parser.each_method.map(&:receiver)
+    expect(receivers).to eq([:string_literal, :string_literal])
   end
 
 
@@ -107,6 +113,9 @@ describe LetItGo::WTFParser do
     arg_types = parser.each_method.select {|x| x.method_name == "gsub" }.map(&:arg_types)
 
     expect(arg_types).to eq([[:regexp_literal, :call]])
+
+    receivers = parser.each_method.map(&:receiver)
+    expect(receivers).to eq([:string_literal])
 
     code = <<-CODE
       "foo".gsub //, "blerg"
@@ -237,7 +246,6 @@ describe LetItGo::WTFParser do
     code = 'a.unpack "C#{a.bytesize}"'
 
     ripped_code = Ripper.sexp(code)
-    pp ripped_code
 
     # [:program,
     #  [[:command_call,
@@ -260,17 +268,18 @@ describe LetItGo::WTFParser do
     expect(arg_types).to eq([[], [:regexp_literal, :string_literal]])
   end
 
-  it "foo" do
-    code = %Q{code << "else\n  " << (call_method || 'exp') << "\nend".freeze}
+  it "receiver" do
+    code = <<-CODE
+      "hello" + "there".freeze
+    CODE
 
     ripped_code = Ripper.sexp(code)
-    pp ripped_code
 
     parser      = LetItGo::WTFParser.new(ripped_code)
-    arg_types = parser.each_method.select {|x| x.method_name == "<<" }.map(&:arg_types)
-    expect(arg_types).to eq([[:call], [:paren], [:string_literal]])
-  end
 
+    receivers = parser.each_method.map(&:receiver)
+    expect(receivers).to eq([:string_literal])
+  end
 
 end
 

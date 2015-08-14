@@ -15,7 +15,7 @@ describe LetItGo::Report do
     - 1) Array#join on line 2
     - 1) Array#join on line 1
   2) #{ fixture("string.rb") }
-    - 2) String#gsub on line 1
+    - 2) String#gsub on line 2
 
 REPORT
 
