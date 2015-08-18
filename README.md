@@ -2,7 +2,7 @@
 
 Frozen string literals can save time and memory when used correctly. This library looks for common places that can easily accept frozen string literals and lets you know if a non-frozen string is being used instead so you can speed up your programs.
 
-For more info on the relationship betwen speed, objects, and memory in Ruby Check out [How Ruby Uses Memory](http://www.schneems.com/2015/05/11/how-ruby-uses-memory.html).
+For more info on the relationship betwen speed, objects, and memory in Ruby Check out [How Ruby Uses Memory](http://www.schneems.com/2015/05/11/how-ruby-uses-memory/).
 
 Note: This library only works with Ruby files on disk, and not with interactive sessions like `irb`. Why? Because intercepting arguments to c defined methods isn't possible [Attempt 1](http://stackoverflow.com/questions/30512945/programmatically-alias-method-that-uses-global-variable) [Attempt 2](http://stackoverflow.com/questions/30584454/get-method-arguments-using-rubys-tracepoint).
 
