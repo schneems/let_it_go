@@ -63,7 +63,7 @@ LetItGo.record do
   "foo".gsub(/f/, "")
 end.print
 
-## Un-Fozen Hotspots
+## Un-Frozen Hotspots
 #  1: Method: String#gsub [(irb):2:in `block in irb_binding']
 ```
 
@@ -74,7 +74,7 @@ LetItGo.record do
   99.times { "foo".gsub(/f/, "") }
 end.print
 
-## Un-Fozen Hotspots
+## Un-Frozen Hotspots
 #  99: Method: String#gsub [(irb):6:in `block (2 levels) in irb_binding']
 ```
 
@@ -89,7 +89,7 @@ $ cat <<  EOF > foo.rb
   end.print
 EOF
 $ ruby foo.rb
-## Un-Fozen Hotspots
+## Un-Frozen Hotspots
   1: Method: String#gsub [foo.rb:4:in `block in <main>']
 ```
 
@@ -104,7 +104,7 @@ $ cat <<  EOF > foo.rb
   end.print
 EOF
 $ ruby foo.rb
-## Un-Fozen Hotspots
+## Un-Frozen Hotspots
   (none)
 ```
 
