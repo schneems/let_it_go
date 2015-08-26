@@ -210,7 +210,7 @@ module LetItGo
           all_methods.each do |obj|
             begin
               yield obj
-            rescue => e
+            rescue => _e
             end
           end
         else
