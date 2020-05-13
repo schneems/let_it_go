@@ -42,6 +42,10 @@ module LetItGo
         call.find {|x| x.is_a?(Array) && x.first == :@ident }[1]
       end
 
+      def receiver
+        call[1].first
+      end
+
       # [:arg_paren,
       #   [
       #     :args_add_block,
@@ -86,12 +90,11 @@ module LetItGo
           args
         end
       end
+      # [:fcall, [:@ident, "foo", [1, 6]]],
+      #    [:arg_paren,
+      #     [:args_add_block, [:args_add_star, [], [:array, nil]], false]]
 
-    # [:fcall, [:@ident, "foo", [1, 6]]],
-    #    [:arg_paren,
-    #     [:args_add_block, [:args_add_star, [], [:array, nil]], false]]
-
-    # [:args_add_star, [], [:array, nil]], false]
+      # [:args_add_star, [], [:array, nil]], false]
 
       # Returns argument types as an array of symbols [:regexp_literal, :string_literal]
       def arg_types
@@ -120,6 +123,10 @@ module LetItGo
         ripped_code = ripped_code.dup
         raise "Wrong node" unless ripped_code.shift == :command_call
         @raw = ripped_code
+      end
+
+      def receiver
+        @raw[0].first
       end
 
       def method_name
@@ -161,6 +168,10 @@ module LetItGo
 
       def args
         [@raw.last]
+      end
+
+      def receiver
+        @raw[0].first
       end
 
       def arg_types
@@ -208,17 +219,14 @@ module LetItGo
       begin
         if block_given?
           all_methods.each do |obj|
-            begin
-              yield obj
-            rescue => e
-            end
+            yield obj
           end
         else
           enum_for(:each)
         end
       rescue => e
         msg = "Could not parse seemingly valid Ruby code:\n\n"
-        msg << "    #{ parser.contents.inspect }\n\n"
+        msg << "    #{ self.contents }\n" if self.contents
         msg << e.message
         raise e, msg
       end

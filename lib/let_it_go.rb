@@ -59,7 +59,7 @@ module LetItGo
 
 
   # Call to begin watching method for frozen violations
-  def self.watch_frozen(klass, method_name, positions:)
+  def self.watch_frozen(klass, method_name, positions:, receiver: false)
     @watching[klass] ||= {}
     @watching[klass][method_name] = positions
   end
@@ -78,7 +78,14 @@ module LetItGo
     unless method = Thread.current[:let_it_go_records][meth.key]
       Thread.current[:let_it_go_records][meth.key] = method = meth
     end
-    method.call_count += 1 if method.optimizable?
+
+    if method.optimizable?
+      # puts method.inspect
+      # puts method.string_allocation_count
+
+      method.call_count += 1
+      # puts method.call_count
+    end
   end
 
 

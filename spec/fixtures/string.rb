@@ -1,2 +1,3 @@
-"".gsub("", "")
-"".gsub(//, "".freeze)
+a = ""
+a.gsub("", "")
+a.gsub(//, "".freeze)

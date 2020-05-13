@@ -7,25 +7,29 @@ describe LetItGo do
 
   it 'records string literal method calls' do
     report = LetItGo.record do
-      "foo".gsub //, "blerg"
+      a = "foo"
+      a.gsub //, "blerg"
     end
     expect(report.count).to eq(1)
   end
 
   it 'does does not report non-string literals' do
     report = LetItGo.record do
-      "foo".gsub //, "blerg".downcase
+      a = "foo"
+      a.gsub //, "blerg".downcase
     end
     expect(report.count).to eq(0)
   end
 
   it "allows block methods to be called" do
     report = LetItGo.record do
-      "foo".sub(/[f]/) { |match| match.downcase }
+      a = "foo"
+      a.sub(/[f]/) { |match| match.downcase }
     end
 
     report = LetItGo.record do
-      "foo".sub(/[f]/) { $&.upcase }
+      a = "foo"
+      a.sub(/[f]/) { $&.upcase }
     end
     expect(report.count).to eq(0)
   end
@@ -82,7 +86,8 @@ describe LetItGo do
 
   it "counts multiple string allocations per line" do
     report = LetItGo.record do
-      "foo".gsub "bloop", "blerg"
+      a = "foo"
+      a.gsub "bloop", "blerg"
     end
     expect(report.count).to eq(2)
   end
